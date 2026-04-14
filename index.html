@@ -83,53 +83,68 @@ button:hover {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy, limit }
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  query, 
+  orderBy, 
+  limit 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
+  apiKey: "AIzaSyBNLGv37SNJ9B6Wg8L_tzvACs74FRWtlbQ",
+  authDomain: "dsd-1-bd1d3.firebaseapp.com",
+  projectId: "dsd-1-bd1d3",
+  storageBucket: "dsd-1-bd1d3.firebasestorage.app",
+  messagingSenderId: "767600115022",
+  appId: "1:767600115022:web:dd617064aec2c7c687b21f"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// профиль
+// 👤 профиль
 let name = localStorage.getItem("playerName") || "Гость";
 document.getElementById("profile").innerText = name;
 
-// топ
+// 🏆 загрузка топа
 async function loadTop() {
-  const q = query(collection(db, "leaderboard"), orderBy("score","desc"), limit(5));
-  const snap = await getDocs(q);
+  try {
+    const q = query(
+      collection(db, "leaderboard"),
+      orderBy("score", "desc"),
+      limit(5)
+    );
 
-  let list = document.getElementById("topList");
-  list.innerHTML = "";
+    const snap = await getDocs(q);
 
-  let i = 0;
+    let list = document.getElementById("topList");
+    list.innerHTML = "";
 
-  snap.forEach(doc => {
-    let d = doc.data();
-    i++;
+    let i = 0;
 
-    let medal = i==1?"🥇":i==2?"🥈":i==3?"🥉":"🎮";
+    snap.forEach(doc => {
+      let d = doc.data();
+      i++;
 
-    let li = document.createElement("li");
-    li.innerText = `${medal} ${d.name} - ⭐ ${d.score}`;
-    list.appendChild(li);
-  });
+      let medal = i === 1 ? "🥇" :
+                   i === 2 ? "🥈" :
+                   i === 3 ? "🥉" : "🎮";
+
+      let li = document.createElement("li");
+      li.innerText = `${medal} ${d.name} - ⭐ ${d.score}`;
+      list.appendChild(li);
+    });
+
+  } catch (err) {
+    console.log("Ошибка загрузки топа:", err);
+  }
 }
 
+// 🔄 автообновление
 loadTop();
 setInterval(loadTop, 5000);
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js")
-    .then(() => console.log("SW зарегистрирован"))
-    .catch(err => console.log(err));
-}
 </script>
 </body>
 </html>
