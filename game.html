@@ -65,7 +65,7 @@ button:hover {
 </div>
 
 </div>
-
+<button onclick="goAdmin()">🧑‍💻 Админ панель</button>
 <script>
 let questions = [
   {q:"вода", a:"Wasser", options:["Wasser","Brot","Milch"]},
@@ -171,6 +171,10 @@ window.saveScore = async function(name, score) {
 <script>
 loadQ();
 </script>
-
+<script>
+function goAdmin() {
+  window.location.href = "admin.html";
+}
+</script>
 </body>
 </html>
