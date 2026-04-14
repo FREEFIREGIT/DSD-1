@@ -80,7 +80,7 @@ button:hover {
 </div>
 
 </div>
-
+<button onclick="goAdmin()">🧑‍💻 Админ панель</button>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
@@ -145,6 +145,11 @@ async function loadTop() {
 // 🔄 автообновление
 loadTop();
 setInterval(loadTop, 5000);
+</script>
+  <script>
+function goAdmin() {
+  window.location.href = "admin.html";
+}
 </script>
 </body>
 </html>
