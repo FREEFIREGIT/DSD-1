@@ -28,6 +28,7 @@ button {
   border-radius: 15px;
   border: none;
   background: #00ffcc;
+  font-size: 16px;
 }
 
 button:hover {
@@ -57,8 +58,8 @@ button:hover {
   <div id="answers"></div>
 
   <p id="result"></p>
-  <p id="score">0</p>
-  <p id="timer">10</p>
+  <p>⭐ Очки: <span id="score">0</span></p>
+  <p>⏱️ Время: <span id="timer">10</span></p>
 </div>
 
 </div>
@@ -111,19 +112,24 @@ function startTimer() {
 function check(a) {
   clearInterval(timer);
 
-  if(a === questions[i].a) score++;
+  if(a === questions[i].a) {
+    score++;
+    document.getElementById("result").innerText = "Правильно 🎉";
+  } else {
+    document.getElementById("result").innerText = "Неправильно ❌";
+  }
 
   document.getElementById("score").innerText = score;
 
   i++;
-  setTimeout(loadQ,500);
+  setTimeout(loadQ, 500);
 }
 
 function end() {
   document.getElementById("question").innerText = "Игра окончена!";
   document.getElementById("answers").innerHTML = "";
 
-  let name = prompt("Имя:");
+  let name = prompt("Введите имя:");
 
   if(name) {
     localStorage.setItem("playerName", name);
@@ -132,26 +138,32 @@ function end() {
 }
 </script>
 
-<!-- FIREBASE -->
+<!-- FIREBASE (ИСПРАВЛЕНО) -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc }
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
+  apiKey: "AIzaSyBNLGv37SNJ9B6Wg8L_tzvACs74FRWtlbQ",
+  authDomain: "dsd-1-bd1d3.firebaseapp.com",
+  projectId: "dsd-1-bd1d3",
+  storageBucket: "dsd-1-bd1d3.firebasestorage.app",
+  messagingSenderId: "767600115022",
+  appId: "1:767600115022:web:dd617064aec2c7c687b21f"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// 🔥 ВАЖНО: делаем функцию глобальной
 window.saveScore = async function(name, score) {
-  await addDoc(collection(db,"leaderboard"), {
-    name, score
+  await addDoc(collection(db, "leaderboard"), {
+    name: name,
+    score: score
   });
 };
+
 </script>
 
 <script>
