@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔥 ADMIN PANEL PRO</title>
+
+<style>
+body {
+  margin:0;
+  font-family: Arial;
+  background:#0f2027;
+  color:white;
+  text-align:center;
+}
+
+.container { padding:15px; max-width:900px; margin:auto; }
+
+button {
+  padding:10px;
+  margin:5px;
+  border:none;
+  border-radius:10px;
+  background:#00ffcc;
+  cursor:pointer;
+}
+
+.card {
+  background:rgba(255,255,255,0.1);
+  padding:10px;
+  margin:10px 0;
+  border-radius:10px;
+}
+
+input {
+  padding:8px;
+  border-radius:8px;
+  border:none;
+  margin:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>🧑‍💻 ADMIN PANEL PRO</h1>
+
+<button onclick="login()">🔐 Google Login</button>
+<button onclick="loadPlayers()">🔄 Refresh</button>
+<button onclick="resetSeason()">🏆 Reset Season</button>
+
+<div id="adminInfo"></div>
+<div id="players"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, getDocs, doc,
+  updateDoc, deleteDoc, getDoc, setDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// 🔥 FIREBASE CONFIG (ЗАМЕНИ СВОЙ)
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let ADMIN_EMAIL = "YOUR_EMAIL@gmail.com"; // 👈 ТВОЙ EMAIL
+
+// 🔐 LOGIN
+window.login = async function() {
+  const provider = new GoogleAuthProvider();
+  const res = await signInWithPopup(auth, provider);
+
+  if(res.user.email === ADMIN_EMAIL){
+    document.getElementById("adminInfo").innerHTML =
+      "✅ ADMIN LOGGED IN: " + res.user.email;
+    loadPlayers();
+  } else {
+    alert("❌ NOT ADMIN");
+  }
+};
+
+// 📊 LOAD PLAYERS
+window.loadPlayers = async function() {
+  const snap = await getDocs(collection(db,"leaderboard"));
+  let box = document.getElementById("players");
+  box.innerHTML = "";
+
+  snap.forEach(d => {
+    let data = d.data();
+
+    box.innerHTML += `
+      <div class="card">
+        <h3>${data.name}</h3>
+        <p>⭐ Score: ${data.score}</p>
+        <p>💰 Coins: ${data.coins}</p>
+        <p>🚫 Banned: ${data.banned}</p>
+
+        <input id="sc-${d.id}" placeholder="new score">
+        <button onclick="setScore('${d.id}')">✏ Update Score</button>
+
+        <button onclick="ban('${d.id}', true)">🚫 Ban</button>
+        <button onclick="ban('${d.id}', false)">✅ Unban</button>
+
+        <button onclick="del('${d.id}')">🗑 Delete</button>
+      </div>
+    `;
+  });
+};
+
+// ✏ UPDATE SCORE
+window.setScore = async function(id){
+  let val = document.getElementById("sc-"+id).value;
+  await updateDoc(doc(db,"leaderboard",id), {
+    score: Number(val)
+  });
+  loadPlayers();
+};
+
+// 🚫 BAN / UNBAN
+window.ban = async function(id,state){
+  await updateDoc(doc(db,"leaderboard",id), {
+    banned: state
+  });
+  loadPlayers();
+};
+
+// 🗑 DELETE PLAYER
+window.del = async function(id){
+  await deleteDoc(doc(db,"leaderboard",id));
+  loadPlayers();
+};
+
+// 🏆 RESET SEASON
+window.resetSeason = async function(){
+  const snap = await getDocs(collection(db,"leaderboard"));
+
+  snap.forEach(async d => {
+    await updateDoc(doc(db,"leaderboard",d.id), {
+      seasonScore: 0
+    });
+  });
+
+  alert("Season reset done!");
+};
+
+</script>
+
+</body>
+</html>
