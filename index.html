@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#00ffcc">
-
 <title>Deutsch Game</title>
 
 <style>
@@ -33,28 +30,11 @@ button {
   font-size: 16px;
 }
 
-button:hover {
-  background: #00ccaa;
-  transform: scale(1.03);
-}
-
 .card {
   background: rgba(255,255,255,0.1);
   padding: 15px;
   border-radius: 15px;
   margin-top: 20px;
-}
-
-#topList {
-  list-style: none;
-  padding: 0;
-}
-
-#topList li {
-  background: rgba(255,255,255,0.1);
-  margin: 8px;
-  padding: 10px;
-  border-radius: 10px;
 }
 </style>
 </head>
@@ -63,42 +43,25 @@ button:hover {
 
 <div class="container">
 
-<h1 id="title">🇩🇪 Deutsch Game</h1>
+<h1>🎮 Game</h1>
 
-<a href="game.html">
-  <button>🎮 Играть и проверить себя</button>
-</a>
+<h2 id="question"></h2>
+<div id="answers"></div>
 
-<div class="card">
-  <h2>👤 Профиль</h2>
-  <p id="profile">Гость</p>
-</div>
-
-<div class="card">
-  <h2>🏆 Топ игроков</h2>
-  <ul id="topList"></ul>
-</div>
+<p>⭐ Score: <span id="score">0</span></p>
+<p>🔥 XP: <span id="xp">0</span></p>
+<p>🏆 Level: <span id="level">A1</span></p>
 
 </div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
-  getFirestore, 
-  collection, 
-  getDocs, 
-  query, 
-  orderBy, 
-  limit,
-  doc,
-  setDoc,
-  onSnapshot
+  getFirestore, doc, getDoc, setDoc, updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { getAuth, GoogleAuthProvider, signInWithPopup }
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-// 🔥 ТВОЙ FIREBASE
+// 🔥 FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyBNLGv37SNJ9B6Wg8L_tzvACs74FRWtlbQ",
   authDomain: "dsd-1-bd1d3.firebaseapp.com",
@@ -110,138 +73,112 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
 
-// =========================
-// 👤 ИМЯ ПРИ ПЕРВОМ ВХОДЕ
-// =========================
-
+// 👤 игрок
 let name = localStorage.getItem("playerName");
 
 if (!name) {
-  name = prompt("Введите имя и фамилию:");
-  if (name) {
-    localStorage.setItem("playerName", name);
-
-    // создаём игрока в базе
-    await setDoc(doc(db, "leaderboard", name), {
-      name: name,
-      score: 0,
-      xp: 0,
-      level: "A1",
-      coins: 0,
-      games: 0,
-      streak: 0,
-      seasonScore: 0,
-      banned: false
-    });
-  } else {
-    name = "Гость";
-  }
+  name = prompt("Введите имя:");
+  localStorage.setItem("playerName", name);
 }
 
-document.getElementById("profile").innerText = name;
+let playerRef = doc(db, "leaderboard", name);
 
-// =========================
-// 🏆 REAL-TIME ТОП
-// =========================
+let playerData = {
+  score: 0,
+  xp: 0,
+  level: "A1"
+};
 
-function loadTopRealtime() {
-  const q = query(
-    collection(db, "leaderboard"),
-    orderBy("score", "desc"),
-    limit(5)
-  );
+// =====================
+// 📥 загрузка игрока
+// =====================
+async function loadPlayer() {
+  let snap = await getDoc(playerRef);
 
-  onSnapshot(q, (snapshot) => {
-    let list = document.getElementById("topList");
-    list.innerHTML = "";
+  if (snap.exists()) {
+    playerData = snap.data();
+  } else {
+    await setDoc(playerRef, playerData);
+  }
 
-    let i = 0;
+  updateUI();
+}
 
-    snapshot.forEach(doc => {
-      let d = doc.data();
-      i++;
+function updateUI() {
+  document.getElementById("score").innerText = playerData.score;
+  document.getElementById("xp").innerText = playerData.xp;
+  document.getElementById("level").innerText = playerData.level;
+}
 
-      let medal = i === 1 ? "🥇" :
-                   i === 2 ? "🥈" :
-                   i === 3 ? "🥉" : "🎮";
+// =====================
+// 🧠 ИИ вопросы
+// =====================
+const words = [
+  {ru:"вода", de:"Wasser"},
+  {ru:"хлеб", de:"Brot"},
+  {ru:"яблоко", de:"Apfel"},
+  {ru:"молоко", de:"Milch"},
+  {ru:"дом", de:"Haus"},
+  {ru:"машина", de:"Auto"}
+];
 
-      let li = document.createElement("li");
-      li.innerText = `${medal} ${d.name} - ⭐ ${d.score}`;
-      list.appendChild(li);
-    });
+let current = {};
+
+function generateQ() {
+  let w = words[Math.floor(Math.random() * words.length)];
+
+  let options = [w.de];
+  while (options.length < 3) {
+    let r = words[Math.floor(Math.random() * words.length)].de;
+    if (!options.includes(r)) options.push(r);
+  }
+
+  options.sort(() => Math.random() - 0.5);
+
+  current = {
+    q: w.ru,
+    a: w.de,
+    options
+  };
+
+  document.getElementById("question").innerText = current.q;
+
+  let box = document.getElementById("answers");
+  box.innerHTML = "";
+
+  current.options.forEach(o => {
+    let b = document.createElement("button");
+    b.innerText = o;
+    b.onclick = check;
+    box.appendChild(b);
   });
 }
 
-loadTopRealtime();
+async function check(e) {
+  let ans = e.target.innerText;
 
-// =========================
-// 🔐 СЕКРЕТ АДМИН ВХОД
-// =========================
-
-const ADMIN_EMAIL = "samirdv888@gmail.com";
-
-let clicks = 0;
-let code = "";
-
-document.getElementById("title").addEventListener("click", () => {
-  clicks++;
-  if (clicks >= 5) unlock();
-  setTimeout(() => clicks = 0, 2000);
-});
-
-document.addEventListener("keydown", e => {
-  code += e.key.toLowerCase();
-
-  if (code.includes("admin")) unlock();
-
-  if (code.length > 10) code = "";
-});
-
-async function unlock() {
-  showEffect("🔐 ACCESS CHECK...");
-
-  const provider = new GoogleAuthProvider();
-  const res = await signInWithPopup(auth, provider);
-
-  if (res.user.email === ADMIN_EMAIL) {
-    showEffect("✅ ACCESS GRANTED");
-    setTimeout(() => {
-      window.location.href = "admin.html";
-    }, 1200);
-  } else {
-    showEffect("❌ ACCESS DENIED");
+  if (ans === current.a) {
+    playerData.score += 1;
+    playerData.xp += 10;
   }
+
+  // уровень
+  if (playerData.xp >= 200) playerData.level = "B2";
+  else if (playerData.xp >= 100) playerData.level = "B1";
+  else if (playerData.xp >= 50) playerData.level = "A2";
+  else playerData.level = "A1";
+
+  await updateDoc(playerRef, playerData);
+
+  updateUI();
+  generateQ();
 }
 
-// эффект
-function showEffect(text) {
-  let div = document.createElement("div");
+// старт
+await loadPlayer();
+generateQ();
 
-  div.style.position = "fixed";
-  div.style.top = "0";
-  div.style.left = "0";
-  div.style.width = "100%";
-  div.style.height = "100%";
-  div.style.background = "black";
-  div.style.color = "#00ffcc";
-  div.style.display = "flex";
-  div.style.alignItems = "center";
-  div.style.justifyContent = "center";
-  div.style.fontSize = "28px";
-  div.style.zIndex = "9999";
-  div.innerText = text;
-
-  document.body.appendChild(div);
-  setTimeout(() => div.remove(), 1500);
-}
-</script>
-
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
 </script>
 
 </body>
